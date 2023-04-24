@@ -32,6 +32,6 @@ while True:
                     VALUES (?, ?, ?)''', (item['id'], item['sku'], item['name']))
         conn.commit()
         
-    page = page + 1
+    page += 1
     print(page)
 cur.close()

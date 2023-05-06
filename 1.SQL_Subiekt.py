@@ -1,40 +1,30 @@
 import pyodbc
 import sqlite3
 import pandas as pd
-#database server and login
-cnxn_str = ("Driver={SQL Server Native Client 11.0};" #insert database info
-            "Server=;"            
-            "Database=;"     
-            "UID=;"
-            "PWD=;")
-#connecting database and selecting values
-cnxn = pyodbc.connect(cnxn_str)
-cursor = cnxn.cursor()
+
+# Connect to SQL Server database and execute a query
+server = input("Insert server name:")
+database = input("Insert database name:")
+username = input("Insert login:")
+password = input("Insert password:")
 query = "select distinct tw_id, tw_DostSymbol, tw_Nazwa, tw_StanMin, cht_IdCecha from dbo.tw__Towar inner join dbo.tw_Stan on dbo.tw_Stan.st_Towid = dbo.tw__Towar.tw_id inner join dbo.tw_CechaTw on dbo.tw__Towar.tw_id = dbo.tw_CechaTw.cht_IdTowar where tw_StanMin != 0 and cht_IdCecha = 8;"
+cnxn_str = f"DRIVER=SQL Server Native Client 11.0;SERVER={server};DATABASE={database};UID={username};PWD={password}"
+cnxn = pyodbc.connect(cnxn_str)
+df_sqlserver = pd.read_sql(query, cnxn)
 
-df = pd.read_sql(query, cnxn)
-#making copy of dataframe
-df_DB_copy = df.copy()
+# Save the data to a SQLite database
+conn = sqlite3.connect("DB_compare.db")
+df_sqlserver.to_sql("prod_subiekt", conn, if_exists="replace", index=False)
 
-print('Data base copy : Done')
-#connecting to sqlite database
-conn = sqlite3.connect('DB_compare.db') 
-curr = conn.cursor()
-print('Connectioon to SQLITE : Established')
-data = df_DB_copy
-#buidling a dataframe from copy df_DB
-df_sub = pd.DataFrame(data, columns= ['tw_id','tw_DostSymbol','tw_Nazwa'])
-df_sub.to_sql('prod_subiekt', conn, if_exists='replace', index = False)
+# Retrieve the data from the SQLite database
+df_sqlite = pd.read_sql("SELECT * FROM prod_subiekt", conn)
 
-#selecting from table prod_subiekt in DB_compare
-curr.execute('''  
-		SELECT * FROM prod_subiekt
-          ''')
+# Print the retrieved data
+print(df_sqlite)
 
-df_sub = pd.DataFrame(curr.fetchall(), columns=['tw_id','tw_DostSymbol','tw_Nazwa'])    
-print (df_sub)
-cursor.close()
-curr.close()
+# Close the connections
+cnxn.close()
+conn.close()
 
 
 

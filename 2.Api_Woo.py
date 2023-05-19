@@ -12,10 +12,13 @@ wcapi = API(
 conn = sqlite3.connect('DB_compare.db')
 cur = conn.cursor()
 
-# Deleting existing rows
-cur.execute('DELETE FROM prod_woo')
-conn.commit()
-
+# Dropping table if exists
+try:
+    cur.execute('DROP TABLE prod_woo')
+    conn.commit()
+except:
+    cur.execute('CREATE TABLE prod_woo (id int, kod_Dost VARCHAR(255), nazwa TEXT)')
+    conn.commit()
 page = 1
 product_count = 0
 

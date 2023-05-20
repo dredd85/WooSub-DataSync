@@ -62,8 +62,8 @@ while True:
         print('Nazwa:', item['name'])
         print('Kod:', item['sku'])
         print('Stan:', item['stock_status'])
-        cur.execute('''INSERT OR IGNORE INTO prod_woo (Symbol, Nazwa, Stan)
-                    VALUES (?, ?, ?)''', (item['sku'], item['name'], item['stock_quantity']))
+        cur.execute('''INSERT OR IGNORE INTO prod_woo (Symbol, Nazwa, Stan, Status)
+                    VALUES (?, ?, ?, ?)''', (item['sku'], item['name'], item['stock_quantity'], item['stock_status']))
         conn.commit()
         
     page = page + 1

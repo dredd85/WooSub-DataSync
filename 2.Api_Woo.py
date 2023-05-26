@@ -22,51 +22,39 @@ except:
 else:
     cur.execute('DELETE FROM prod_woo')
 
-page = 1
-product_count = 0
+# Defining fetch function
+def fetch_products(stock):
+    page = 1
+    product_count = 0
+    while True:
+        products = wcapi.get('products', params={'per_page': 50, 'stock_status': {stock}, 'page': page}).json()
+        
+        if len(products) == 0: # no more products
+            print('Products {} fetched from API'.format(stock))
+            break   
+        for item in products:
+            product_count += 1
+            print(product_count)
+            print('ID:', item['id'])
+            print('Nazwa:', item['name'])
+            print('Kod:', item['sku'])
+            print('Stan:', item['stock_status'])
+            cur.execute('''INSERT OR IGNORE INTO prod_woo (Symbol, Nazwa, Stan, Status)
+                        VALUES (?, ?, ?, ?)''', (item['sku'], item['name'], item['stock_quantity'], item['stock_status']))
+            conn.commit()
+            
+        page = page + 1
+        print(page)
+    print('Fetched:',product_count, 'products')
 
 # Fetching in stock products
-while True:
-    products = wcapi.get('products', params={'per_page': 50, 'stock_status': 'instock', 'page': page}).json()
-    
-    if len(products) == 0: # no more products
-        print('Products in stock fetched')
-        break   
-    for item in products:
-        product_count += 1
-        print(product_count)
-        print('ID:', item['id'])
-        print('Nazwa:', item['name'])
-        print('Kod:', item['sku'])
-        print('Stan:', item['stock_status'])
-        cur.execute('''INSERT OR IGNORE INTO prod_woo (Symbol, Nazwa, Stan, Status)
-                    VALUES (?, ?, ?, ?)''', (item['sku'], item['name'], item['stock_quantity'], item['stock_status']))
-        conn.commit()
-        
-    page = page + 1
-    print(page)
-
-page = 1
+fetch_products('instock')
 
 # Fetching out of stock products
-while True:
-    products = wcapi.get('products', params={'per_page': 50, 'stock_status': 'outofstock', 'page': page}).json()
-    
-    if len(products) == 0: # no more products
-        print('Products out of stock fetched')
-        break   
-    for item in products:
-        product_count += 1
-        print(product_count)
-        print('ID:', item['id'])
-        print('Nazwa:', item['name'])
-        print('Kod:', item['sku'])
-        print('Stan:', item['stock_status'])
-        cur.execute('''INSERT OR IGNORE INTO prod_woo (Symbol, Nazwa, Stan, Status)
-                    VALUES (?, ?, ?, ?)''', (item['sku'], item['name'], item['stock_quantity'], item['stock_status']))
-        conn.commit()
-        
-    page = page + 1
-    print(page)
+fetch_products('outofstock')
+
+cur.execute('SELECT COUNT(Nazwa) FROM prod_woo')
+rowcount = cur.fetchone()[0]
+print('Inserted {} products into the database'.format(rowcount))
 
 cur.close()

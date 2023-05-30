@@ -58,3 +58,4 @@ rowcount = cur.fetchone()[0]
 print('Inserted {} products into the database'.format(rowcount))
 
 cur.close()
+conn.close()

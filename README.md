@@ -25,14 +25,14 @@ pip install pyodbc sqlite3 pandas woocommerce
 
 ## Usage
 
-1. **Script 1: SQL Server to SQLite Database Comparison**
+1. **Script 1: SQL Server to SQLite Database**
 
    - Run the script and provide the required information when prompted:
      - SQL Server details (server name, database name, login, and password)
    - The script will connect to the SQL Server database, execute a query to retrieve data, and save the data to a SQLite database named "DB_compare.db."
    - The retrieved data can be accessed and printed from the SQLite database.
 
-2. **Script 2: Woocommerce API Data Fetch and Comparison**
+2. **Script 2: Woocommerce API Data Fetch**
 
    - Run the script and provide the required information when prompted:
      - Woocommerce site URL, consumer key, and secret key

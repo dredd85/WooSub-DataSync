@@ -40,7 +40,7 @@ if out_of_stock_sub < out_of_stock_woo:
     print('Woo Database out of stock products: {}'.format(out_of_stock_woo))
     print('Subiekt Database out of stock products: {}'.format(out_of_stock_sub))
     print('Check those products: ','\n', df_low_stock_woo)  
-    print('\n','Also check NEWLY ADDED products in Woocoommerce')
+    print('\n''Also check NEWLY ADDED products in Woocoommerce')
 elif out_of_stock_sub > out_of_stock_woo:
     print('Woo Database out of stock products: {}'.format(out_of_stock_woo))
     print('Subiekt Database out of stock products: {}'.format(out_of_stock_sub))

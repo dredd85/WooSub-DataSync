@@ -45,6 +45,7 @@ elif out_of_stock_sub > out_of_stock_woo:
     print('Woo Database out of stock products: {}'.format(out_of_stock_woo))
     print('Subiekt Database out of stock products: {}'.format(out_of_stock_sub))
     print('Check those products: ', '\n', df_low_stock)
+    df_low_stock.to_csv('Subiekt_Woocommerce/low_stock_raport.csv', encoding='utf-8', index=False)
 else:
     print('\n''Out of stock products MATCH')
 # counting all rows in both tables 
@@ -64,6 +65,7 @@ if row_count_sub != row_count_woo:
     print('Woo Database products count: {}'.format(row_count_woo))
     print('Subiekt Database products count: {}'.format(row_count_sub))
     print('Check those products:','\n', df_diff_stock)
+    df_diff_stock.to_csv('Subiekt_Woocommerce/diff_stock_raport.csv', encoding='utf-8', index=False)
 else:
     print('\n''Overall number of products MATCH')
 

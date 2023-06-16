@@ -17,11 +17,11 @@ def panda_querry(querry):
     sql = pd.read_sql('{}'.format(querry),conn)
     return sql
 
-# checking if stocks online aren't bigger then local
+# checking products that should be out of stock online
 df_low_stock = panda_querry("""
 SELECT prod_woo.Nazwa, prod_woo.Symbol, prod_woo.Stan as Stan_Woo, prod_subiekt.Stan as Stan_Sub 
 FROM prod_woo join prod_subiekt on prod_woo.Symbol = prod_subiekt.Symbol
-WHERE prod_subiekt.Stan < prod_woo.Stan
+WHERE prod_subiekt.Stan < prod_subiekt.Stan_Minimalny
 AND prod_woo.Status != 'outofstock';
 """)
 # checking products out of stock in Woo

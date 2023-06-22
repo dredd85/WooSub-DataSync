@@ -17,11 +17,11 @@ def panda_querry(querry):
     sql = pd.read_sql('{}'.format(querry),conn)
     return sql
 
-# checking products that should be out of stock online
+# checking if stocks online aren't bigger then local
 df_low_stock = panda_querry("""
 SELECT prod_woo.Nazwa, prod_woo.Symbol, prod_woo.Stan as Stan_Woo, prod_subiekt.Stan as Stan_Sub 
 FROM prod_woo join prod_subiekt on prod_woo.Symbol = prod_subiekt.Symbol
-WHERE prod_subiekt.Stan < prod_subiekt.Stan_Minimalny
+WHERE prod_subiekt.Stan < prod_woo.Stan
 AND prod_woo.Status != 'outofstock';
 """)
 # checking products out of stock in Woo
@@ -47,7 +47,7 @@ elif out_of_stock_sub > out_of_stock_woo:
     print('Check those products: ', '\n', df_low_stock)
     df_low_stock.to_csv('Subiekt_Woocommerce/low_stock_raport.csv', encoding='utf-8', index=False)
 else:
-    print('\n''Out of stock products MATCH')
+    print('\n''Number of out of stock products MATCH')
 # counting all rows in both tables 
 row_count_woo = row_count('Select count(Nazwa) From prod_woo')
 row_count_sub = row_count('Select count(Nazwa) From prod_subiekt')
@@ -69,7 +69,7 @@ if row_count_sub != row_count_woo:
 else:
     print('\n''Overall number of products MATCH')
 
-print('\n''All differences CHECKED')
+print('\n''Quantity differences CHECKED')
 
 cursor.close()
 conn.close()

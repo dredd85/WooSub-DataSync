@@ -57,7 +57,6 @@ WHERE prod_subiekt.Stan < prod_subiekt.Stan_Minimalny;
 
 if out_of_stock_compare.empty:
     print('Second symbol check PASSED')
-    print('Products checks PASSED')
 else:
     print('Products IN out of stock in Woo which could be in stock''\n',out_of_stock_compare)
 
@@ -69,5 +68,12 @@ JOIN prod_subiekt on prod_woo.Symbol = prod_subiekt.Symbol
 WHERE prod_woo.Stan > prod_subiekt.stan 
 ORDER BY prod_woo.Nazwa
 """)
+
+if stock_check.empty:
+    print('Woocommerce products stock CHECKED')
+    print('All products checks PASSED')
+else:
+    print('Products worth checking: Higher Woo stock than Local')
+    print(stock_check)
 cursor.close()
 conn.close()

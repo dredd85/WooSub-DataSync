@@ -28,9 +28,11 @@ LEFT JOIN prod_subiekt ON prod_woo.Symbol = prod_subiekt.Symbol
 WHERE prod_subiekt.Symbol IS NULL
 ORDER BY prod_woo.Nazwa
 """)
-
-print('There are {} with symbols not matching between databases'.format(database_count))
-print('Check those products:''\n', not_matching_prod,'\n')
+if not_matching_prod.empty:
+    print('Symbols in the databases MATCH')
+else:
+    print('There are {} with symbols not matching between databases'.format(database_count))
+    print('Check those products:''\n', not_matching_prod,'\n')
 
 # Raport to compare the codes from both databases that are out of stock
 
@@ -43,7 +45,7 @@ WHERE prod_woo.Status = 'outofstock';
 """)
 
 if out_of_stock_compare.empty:
-    print('First symbol check PASSED')
+    print('Out of stock FIRST check PASSED')
 else:
     print('Products NOT in out of stock Woo with low stock locally''\n',out_of_stock_compare)
 
@@ -56,7 +58,7 @@ WHERE prod_subiekt.Stan < prod_subiekt.Stan_Minimalny;
 """)
 
 if out_of_stock_compare.empty:
-    print('Second symbol check PASSED')
+    print('Out of stock SECOND check PASSED')
 else:
     print('Products IN out of stock in Woo which could be in stock''\n',out_of_stock_compare)
 
@@ -71,7 +73,7 @@ ORDER BY prod_woo.Nazwa
 
 if stock_check.empty:
     print('Woocommerce products stock CHECKED')
-    print('All products checks PASSED')
+    print('All products symbols CHECKED')
 else:
     print('Products worth checking: Higher Woo stock than Local')
     print(stock_check)

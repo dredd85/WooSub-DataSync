@@ -33,32 +33,33 @@ print('There are {} with symbols not matching between databases'.format(database
 print('Check those products:''\n', not_matching_prod,'\n')
 
 # Raport to compare the codes from both databases that are out of stock
-try:    
-    out_of_stock_compare = panda_querry("""
-    SELECT prod_subiekt.Symbol FROM prod_subiekt
-    WHERE prod_subiekt.Stan < prod_subiekt.Stan_Minimalny
-    EXCEPT
-    SELECT prod_woo.Symbol FROM prod_woo
-    WHERE prod_woo.Status = 'outofstock';
-    """)
-    if out_of_stock_compare.empty:
-        print('Out of stock products symbols match. Nothing to raport.')
-    else:
-        print('Products NOT in out of stock Woo with low stock locally''\n',out_of_stock_compare)
-except:
-    out_of_stock_compare = panda_querry("""
-    SELECT prod_woo.Symbol FROM prod_woo
-    WHERE prod_woo.Status = 'outofstock'
-    EXCEPT
-    SELECT prod_subiekt.Symbol FROM prod_subiekt
-    WHERE prod_subiekt.Stan < prod_subiekt.Stan_Minimalny;
-    """)
-    if out_of_stock_compare.empty:
-        print('Out of stock products match. Nothing to raport')
-    else:
-        print('Products IN out of stock in Woo which could be in stock''\n',out_of_stock_compare)
+
+out_of_stock_compare = panda_querry("""
+SELECT prod_subiekt.Symbol FROM prod_subiekt
+WHERE prod_subiekt.Stan < prod_subiekt.Stan_Minimalny
+EXCEPT
+SELECT prod_woo.Symbol FROM prod_woo
+WHERE prod_woo.Status = 'outofstock';
+""")
+
+if out_of_stock_compare.empty:
+    print('First symbol check PASSED')
 else:
-    print('Products checked')
+    print('Products NOT in out of stock Woo with low stock locally''\n',out_of_stock_compare)
+
+out_of_stock_compare = panda_querry("""
+SELECT prod_woo.Symbol FROM prod_woo
+WHERE prod_woo.Status = 'outofstock'
+EXCEPT
+SELECT prod_subiekt.Symbol FROM prod_subiekt
+WHERE prod_subiekt.Stan < prod_subiekt.Stan_Minimalny;
+""")
+
+if out_of_stock_compare.empty:
+    print('Second symbol check PASSED')
+    print('Products checks PASSED')
+else:
+    print('Products IN out of stock in Woo which could be in stock''\n',out_of_stock_compare)
 
 # Products worth checking local stock < online stock
 stock_check = panda_querry("""

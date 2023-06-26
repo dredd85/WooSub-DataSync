@@ -45,3 +45,12 @@ pip install pyodbc sqlite3 pandas woocommerce
    - Run the script to compare the data in SQLITE database between the Woocommerce table ("prod_woo") and the local Subiekt("prod_subiekt").
    - The script will execute SQL queries to identify differences in stock levels, out-of-stock products, and overall product count.
    - Any differences found will be reported, including products with low stock levels, out-of-stock products, and discrepancies in overall product count.
+  
+4. **Script 4: Database Codes Comparison**
+
+   - This script compares data between the SQLite database ("DB_compare.db") and the WooCommerce database.
+   - It performs the following comparisons:
+     - Product Code Comparison: Identifies products without proper codes in the subiekt database and displays the mismatched symbols.
+     - Out-of-Stock Check: Compares the codes of products that are out of stock in one database but not in the other, and vice versa.
+     - Stock Level Discrepancy: Identifies products with higher stock levels in the WooCommerce database compared to the local database.
+   - Execute the script and observe the results printed to the console.

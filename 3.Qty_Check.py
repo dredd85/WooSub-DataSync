@@ -69,11 +69,14 @@ if row_count_sub != row_count_woo:
     print('Woo Database products count: {}'.format(row_count_woo))
     print('Subiekt Database products count: {}'.format(row_count_sub))
     print('Check those products:','\n', df_diff_stock)
-    print('Also check new added products in Woo Store')
+    print('Also check newly added products in Woo Store')
 else:
     print('\n''Overall number of products MATCH')
 
-print('\n''Quantity differences CHECKED')
+if out_of_stock_woo == out_of_stock_sub:
+    print('\n''Quantity differences CHECKED')
+else:
+    print('Run the SKU_Check to check symbols')
 
 cursor.close()
 conn.close()

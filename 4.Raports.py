@@ -22,21 +22,22 @@ LEFT JOIN prod_subiekt ON prod_woo.Symbol = prod_subiekt.Symbol
 WHERE prod_subiekt.Symbol IS NULL
 ORDER BY prod_woo.Nazwa
 """)
+
 database_count = row_count("""
 SELECT  count(prod_woo.Nazwa) FROM prod_woo
 LEFT JOIN prod_subiekt ON prod_woo.Symbol = prod_subiekt.Symbol
 WHERE prod_subiekt.Symbol IS NULL
 ORDER BY prod_woo.Nazwa
 """)
+
 if not_matching_prod.empty:
     print('Symbols in the databases MATCH')
 else:
-    print('There are {} with symbols not matching between databases'.format(database_count))
+    print('{} products with symbols not matching'.format(database_count))
     print('Check those products:''\n', not_matching_prod,'\n')
 
-# Raport to compare the codes from both databases that are out of stock
-
-out_of_stock_compare = panda_querry("""
+# comparing out of stock products by symbols
+subiekt_woo_compare = panda_querry("""
 SELECT prod_subiekt.Symbol FROM prod_subiekt
 WHERE prod_subiekt.Stan < prod_subiekt.Stan_Minimalny
 EXCEPT
@@ -44,12 +45,12 @@ SELECT prod_woo.Symbol FROM prod_woo
 WHERE prod_woo.Status = 'outofstock';
 """)
 
-if out_of_stock_compare.empty:
-    print('Out of stock FIRST check PASSED')
+if subiekt_woo_compare.empty:
+    print('Low stock in Subiekt CHECKED''\n')
 else:
-    print('Products NOT in out of stock Woo with low stock locally''\n',out_of_stock_compare)
+    print('Products that should be changed to out of stock in Woo:''\n',subiekt_woo_compare)
 
-out_of_stock_compare = panda_querry("""
+woo_subiekt_compare = panda_querry("""
 SELECT prod_woo.Symbol FROM prod_woo
 WHERE prod_woo.Status = 'outofstock'
 EXCEPT
@@ -57,10 +58,10 @@ SELECT prod_subiekt.Symbol FROM prod_subiekt
 WHERE prod_subiekt.Stan < prod_subiekt.Stan_Minimalny;
 """)
 
-if out_of_stock_compare.empty:
-    print('Out of stock SECOND check PASSED')
+if woo_subiekt_compare.empty:
+    print('Low stock in Woo CHECKED','\n')
 else:
-    print('Products IN out of stock in Woo which could be in stock''\n',out_of_stock_compare)
+    print('Products IN out of stock in Woo which could be in stock''\n',woo_subiekt_compare)
 
 # Products worth checking local stock < online stock
 stock_check = panda_querry("""
@@ -77,5 +78,6 @@ if stock_check.empty:
 else:
     print('Products worth checking: Higher Woo stock than Local')
     print(stock_check)
+
 cursor.close()
 conn.close()

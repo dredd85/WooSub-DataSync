@@ -42,14 +42,16 @@ if df_low_stock_woo.empty:
 else:
     print('Woo Database out of stock products: {}'.format(out_of_stock_woo))
     print('Subiekt Database out of stock products: {}'.format(out_of_stock_sub))
+    print('Higher stock locally')
     print('Check those products: ','\n', df_low_stock_woo)
 
 if df_low_stock.empty:
     print('\n''Woo low stock products CHECKED')
 else:
-    print('Woo Database out of stock products: {}'.format(out_of_stock_woo))
+    print('\n''Woo Database out of stock products: {}'.format(out_of_stock_woo))
     print('Subiekt Database out of stock products: {}'.format(out_of_stock_sub))
-    print('Check those products: ', '\n', df_low_stock)
+    print('Low stock locally')
+    print('Check those products online: ', '\n', df_low_stock)
 
 # counting all rows in both tables 
 row_count_woo = row_count('SELECT COUNT(Nazwa) FROM prod_woo')
@@ -65,7 +67,7 @@ ORDER BY prod_woo.Nazwa
 """,)
 # checking for differences of overall number of products
 if row_count_sub != row_count_woo:
-    print('The number of products in Databases does NOT match')
+    print('\n''The number of products in Databases does NOT match')
     print('Woo Database products count: {}'.format(row_count_woo))
     print('Subiekt Database products count: {}'.format(row_count_sub))
     print('Check those products:','\n', df_diff_stock)
@@ -73,6 +75,7 @@ if row_count_sub != row_count_woo:
 else:
     print('\n''Overall number of products MATCH')
 
+# checking if number of out of stock match
 if out_of_stock_woo == out_of_stock_sub:
     print('\n''Quantity differences CHECKED')
 else:

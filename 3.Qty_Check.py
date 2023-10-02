@@ -74,6 +74,7 @@ if row_count_sub != row_count_woo:
     print('Also check newly added products in Woo Store')
 else:
     print('\n''Overall number of products MATCH')
+    print(f'Number of product: {row_count_woo}')
 
 # checking if number of out of stock match
 if out_of_stock_woo == out_of_stock_sub:

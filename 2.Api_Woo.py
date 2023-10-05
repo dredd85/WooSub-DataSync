@@ -1,14 +1,39 @@
 from woocommerce import API
-import json
 import sqlite3
 
-wcapi = API(
-    url=input('Insert Woocommerce site:'),
-    consumer_key=input('Insert consumer key:'),
-    consumer_secret=input('Insert secret key:'),
-    version="wc/v3",
-    timeout=10
-)
+print('Auth from file (F) or input (I)?')
+print('For file (F) auth ensure to load file from working directory')
+answer = input('Type F or I: ')
+answer = answer.upper()
+possible_answers = ['F', 'I']
+
+if answer not in possible_answers:
+    print('Wrong input, try again')
+    quit()
+
+if answer == possible_answers[0]:
+    key_list = []
+    file = input('Type the file name: ')
+    try:
+        API_key = open(file, "r")
+        for line in API_key:
+            line = line.strip()
+            key_list.append(line)
+        url = key_list[0]
+        consumer_key = key_list[1]
+        consumer_secret = key_list[2]
+        print('File load success')   
+    except FileNotFoundError as E:
+        print('***Auth failed*** Error')
+        print(E)
+        quit()
+else:
+    url = input('Insert Woocommerce site: ')
+    consumer_key = input('Insert consumer key: ')
+    consumer_secret = input('Insert secret key: ')
+
+wcapi = API(url, consumer_key, consumer_secret, version="wc/v3", timeout=10)
+
 try:
     conn = sqlite3.connect('DB_compare.db')
     cur = conn.cursor()

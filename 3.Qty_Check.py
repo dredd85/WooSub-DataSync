@@ -59,18 +59,33 @@ row_count_sub = row_count('SELECT COUNT(Nazwa) FROM prod_subiekt')
 
 # looking for products with no match in the Woo database
 df_diff_stock = panda_querry("""
-SELECT prod_woo.Symbol, prod_subiekt.Symbol as Symbol_Sub, prod_woo.Nazwa , prod_woo.Stan as Stan_Online, 
+SELECT prod_woo.Symbol as Symbol_Woo, prod_subiekt.Symbol as Symbol_Sub, prod_woo.Nazwa , prod_woo.Stan as Stan_Online, 
 prod_subiekt.Stan as Stan_Local FROM prod_woo
 LEFT JOIN prod_subiekt ON prod_woo.Symbol = prod_subiekt.Symbol
 WHERE prod_subiekt.Symbol is NULL
 ORDER BY prod_woo.Nazwa
-""",)
+""")
+
+df_diff_stock_woo = panda_querry("""
+SELECT prod_woo.Symbol as Symbol_Woo, prod_subiekt.Symbol as Symbol_Sub, 
+prod_subiekt.Stan as Stan_Local, prod_subiekt.Nazwa FROM prod_subiekt
+LEFT JOIN prod_woo ON prod_woo.Symbol = prod_subiekt.Symbol
+WHERE prod_woo.Symbol is NULL
+ORDER BY prod_woo.Nazwa
+""")
+
 # checking for differences of overall number of products
-if row_count_sub != row_count_woo:
+if row_count_sub < row_count_woo:
     print('\n''The number of products in Databases does NOT match')
     print('Woo Database products count: {}'.format(row_count_woo))
     print('Subiekt Database products count: {}'.format(row_count_sub))
     print('Check those products:','\n', df_diff_stock)
+    print('Also check newly added products in Woo Store')
+elif row_count_sub > row_count_woo:
+    print('\n''The number of products in Databases does NOT match')
+    print('Woo Database products count: {}'.format(row_count_woo))
+    print('Subiekt Database products count: {}'.format(row_count_sub))
+    print('Check those products:','\n', df_diff_stock_woo)
     print('Also check newly added products in Woo Store')
 else:
     print('\n''Overall number of products MATCH')

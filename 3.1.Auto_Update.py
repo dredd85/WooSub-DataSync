@@ -15,7 +15,9 @@ WHERE Stan_Minimalny > Stan""")
 
 woo_products = panda_querry("""
 SELECT Symbol FROM prod_woo
-WHERE Stan > 0""")
+WHERE Stan > 0
+OR Status = "instock"
+""")
 
 # Convert 'Symbol' columns to string type in both DataFrames
 out_of_stock_local['Symbol'] = out_of_stock_local['Symbol'].astype(str)
@@ -30,3 +32,4 @@ for index, product in woo_products.iterrows():
     if sku in out_of_stock_local['Symbol'].values:
         products_to_update.append(sku)
         
+print(products_to_update)

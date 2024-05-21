@@ -43,7 +43,7 @@ try:
         cur.execute('SELECT Nazwa FROM prod_woo')
         conn.commit()
     except:
-        cur.execute('CREATE TABLE prod_woo (Symbol VARCHAR(255), Nazwa TEXT, Stan INT, Status TEXT)')
+        cur.execute('CREATE TABLE prod_woo (ID VARCHAR(255), Symbol VARCHAR(255), Nazwa TEXT, Stan INT, Status TEXT)')
         conn.commit()
     else:
         cur.execute('DELETE FROM prod_woo')
@@ -65,8 +65,8 @@ try:
                 print('Nazwa:', item['name'])
                 print('Kod:', item['sku'])
                 print('Stan:', item['stock_status'])
-                cur.execute('''INSERT OR IGNORE INTO prod_woo (Symbol, Nazwa, Stan, Status)
-                            VALUES (?, ?, ?, ?)''', (item['sku'], item['name'], item['stock_quantity'], item['stock_status']))
+                cur.execute('''INSERT OR IGNORE INTO prod_woo (ID, Symbol, Nazwa, Stan, Status)
+                            VALUES (?, ?, ?, ?, ?)''', (item['id'], item['sku'], item['name'], item['stock_quantity'], item['stock_status']))
                 conn.commit()
                 
             page = page + 1

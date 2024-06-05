@@ -1,11 +1,12 @@
 from woocommerce import API
 import sqlite3
+import os
 
-print('Auth from file (F) or input (I)?')
-print('For file (F) auth ensure to load file from working directory')
-answer = input('Type F or I: ')
+print('Auth from env (E) or input (I)?')
+print('For file (E) auth ensure correct variable name')
+answer = input('Type E or I: ')
 answer = answer.upper()
-possible_answers = ['F', 'I']
+possible_answers = ['E', 'I']
 
 if answer not in possible_answers:
     print('Wrong input, try again')
@@ -13,16 +14,14 @@ if answer not in possible_answers:
 
 if answer == possible_answers[0]:
     key_list = []
-    file = input('Type the file name: ')
+    var = input('Type variable name: ')
     try:
-        API_key = open(file, "r")
-        for line in API_key:
-            line = line.strip()
-            key_list.append(line)
-        url = key_list[0]
-        consumer_key = key_list[1]
-        consumer_secret = key_list[2]
-        print('File load success')   
+        API_Key = os.getenv(var)
+        var_unpacked = API_Key.split(';')
+        url = var_unpacked[0]
+        consumer_key = var_unpacked[1]
+        consumer_secret = var_unpacked[2]
+        print('File load success')  
     except FileNotFoundError as E:
         print('***Auth failed*** Error')
         print(E)

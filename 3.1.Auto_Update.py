@@ -36,7 +36,7 @@ for index, product in woo_products.iterrows():
         products_to_update.append((product['ID'], sku))
 
 print('Auth from env (E) or input (I)?')
-print('For file (E) auth ensure correct variable name')
+print('For env (E) auth ensure correct variable name')
 answer = input('Type E or I: ')
 answer = answer.upper()
 possible_answers = ['E', 'I']
@@ -46,7 +46,6 @@ if answer not in possible_answers:
     quit()
 
 if answer == possible_answers[0]:
-    key_list = []
     var = input('Type variable name: ')
     try:
         cred = os.getenv(var)

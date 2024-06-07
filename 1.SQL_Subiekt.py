@@ -3,18 +3,17 @@ import sqlite3
 import pandas as pd
 import os
 
-print('Auth from file (F) or input (I)?')
-print('For file (F) auth ensure to load file from working directory')
-answer = input('Type F or I: ')
+print('Auth from env (E) or input (I)?')
+print('For env (E) auth ensure correct variable name')
+answer = input('Type E or I: ')
 answer = answer.upper()
-possible_answers = ['F', 'I']
+possible_answers = ['E', 'I']
 
 if answer not in possible_answers:
     print('Wrong input, try again')
     quit()
 
 if answer == possible_answers[0]:
-    key_list = []
     var = input('Type variable name: ')
     try:
         cred = os.getenv(var)

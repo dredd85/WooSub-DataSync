@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 from woocommerce import API
+import os
 
 # Connect to SQLite database
 conn = sqlite3.connect("DB_compare.db")
@@ -34,12 +35,11 @@ for index, product in woo_products.iterrows():
     if sku in out_of_stock_local['Symbol'].values:
         products_to_update.append((product['ID'], sku))
 
-# WooCommerce API credentials
-print('Auth from file (F) or input (I)?')
-print('For file (F) auth ensure to load file from working directory')
-answer = input('Type F or I: ')
+print('Auth from env (E) or input (I)?')
+print('For file (E) auth ensure correct variable name')
+answer = input('Type E or I: ')
 answer = answer.upper()
-possible_answers = ['F', 'I']
+possible_answers = ['E', 'I']
 
 if answer not in possible_answers:
     print('Wrong input, try again')
@@ -47,16 +47,14 @@ if answer not in possible_answers:
 
 if answer == possible_answers[0]:
     key_list = []
-    file = input('Type the file name: ')
+    var = input('Type variable name: ')
     try:
-        API_key = open(file, "r")
-        for line in API_key:
-            line = line.strip()
-            key_list.append(line)
-        url = key_list[0]
-        consumer_key = key_list[1]
-        consumer_secret = key_list[2]
-        print('File load success')   
+        cred = os.getenv(var)
+        var_unpacked = cred.split(';')
+        url = var_unpacked[0]
+        consumer_key = var_unpacked[1]
+        consumer_secret = var_unpacked[2]
+        print('File load success')  
     except FileNotFoundError as E:
         print('***Auth failed*** Error')
         print(E)

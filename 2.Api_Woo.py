@@ -16,8 +16,8 @@ if answer == possible_answers[0]:
     key_list = []
     var = input('Type variable name: ')
     try:
-        API_Key = os.getenv(var)
-        var_unpacked = API_Key.split(';')
+        cred = os.getenv(var)
+        var_unpacked = cred.split(';')
         url = var_unpacked[0]
         consumer_key = var_unpacked[1]
         consumer_secret = var_unpacked[2]

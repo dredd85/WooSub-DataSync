@@ -1,6 +1,7 @@
 import pyodbc
 import sqlite3
 import pandas as pd
+import os
 
 print('Auth from file (F) or input (I)?')
 print('For file (F) auth ensure to load file from working directory')
@@ -14,17 +15,15 @@ if answer not in possible_answers:
 
 if answer == possible_answers[0]:
     key_list = []
-    file = input('Type the file name: ')
+    var = input('Type variable name: ')
     try:
-        SQL_key = open(file, "r")
-        for line in SQL_key:
-            line = line.strip()
-            key_list.append(line)
-        server = key_list[0]
-        database = key_list[1]
-        username = key_list[2]
-        password = key_list[3]
-        print('File load success')   
+        cred = os.getenv(var)
+        var_unpacked = cred.split(';')
+        server = var_unpacked[0]
+        database = var_unpacked[1]
+        username = var_unpacked[2]
+        password = var_unpacked[3]
+        print('Database connection: Success')   
     except FileNotFoundError as E:
         print('***Auth failed*** Error')
         print(E)

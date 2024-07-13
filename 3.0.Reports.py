@@ -42,7 +42,7 @@ count_woo_not_in_sub = len(woo_not_in_sub)
 count_sub_not_in_woo = len(sub_not_in_woo)
 
 # Print overall counts and differences
-print("Summary of products for ecom:")
+print("Report: Products for Ecommerce Summary:")
 print(f"Total products in WOO: {total_woo}")
 print(f"Total products in SUB: {total_sub}")
 print("")
@@ -56,4 +56,86 @@ print(f"Products in SUB but not in WOO: {count_sub_not_in_woo}")
 for product in sub_not_in_woo:
     print(f"Symbol: {product['Symbol']} - Nazwa: {product['Nazwa']}")
 
+print("")
+print('Proceed with Report: Out Of Stock Summary?')
+user_decision = input('Proceed? Y/N: ').strip().lower()
+if user_decision != 'y':
+    print('To view remaining reports reload script')
+    quit()
 
+print("")
+print('Report: Out Of Stock Summary')
+print("")
+
+# Fetch out of stock products from local and online databases
+out_of_stock_local = panda_query("""
+    SELECT Symbol, Nazwa FROM prod_subiekt
+    WHERE Stan_Minimalny > Stan
+""")
+
+out_of_stock_woo = panda_query("""
+    SELECT Symbol, Nazwa FROM prod_woo
+    WHERE Stan <= 0 OR Status = 'outofstock'
+""")
+
+# Calculate total counts
+total_out_of_stock_local = len(out_of_stock_local)
+total_out_of_stock_woo = len(out_of_stock_woo)
+print(f"Total products out of stock in WOO: {total_out_of_stock_woo}")
+print(f"Total products out of stock in SUB: {total_out_of_stock_local}")
+
+# Initialize lists to store out-of-stock differences
+out_of_stock_local_not_in_woo = []
+out_of_stock_woo_not_in_local = []
+
+# Convert 'Symbol' to a set for faster lookup
+woo_symbols = set(out_of_stock_woo['Symbol'])
+
+# Check for out of stock products in local but not in woo
+for index, product in out_of_stock_local.iterrows():
+    if product['Symbol'] not in woo_symbols:
+        out_of_stock_local_not_in_woo.append(product)
+
+# Convert 'Symbol' to a set for faster lookup
+local_symbols = set(out_of_stock_local['Symbol'])
+
+# Check for in stock products in woo but not in local out of stock
+for index, product in out_of_stock_woo.iterrows():
+    if product['Symbol'] not in local_symbols:
+        out_of_stock_woo_not_in_local.append(product)
+
+# Calculate counts of out-of-stock products not in the other dataset
+count_out_of_stock_local_not_in_woo = len(out_of_stock_local_not_in_woo)
+count_out_of_stock_woo_not_in_local = len(out_of_stock_woo_not_in_local)
+
+# Print out-of-stock differences
+if count_out_of_stock_local_not_in_woo > 0:
+    print(f"Out of stock in SUB but in stock in WOO: {count_out_of_stock_local_not_in_woo}")
+    for product in out_of_stock_local_not_in_woo:
+        print(f"Symbol: {product['Symbol']} - Nazwa: {product['Nazwa']}")
+    print('')
+    print('Run the Auto_Update script to level the stocks')
+else:
+    print('')
+    print('*No products to set out_of_stock in WOO')
+print("")
+
+if count_out_of_stock_woo_not_in_local > 0:
+    print(f"Out of stock in WOO but not in SUB: {count_out_of_stock_woo_not_in_local}")
+    for product in out_of_stock_woo_not_in_local:
+        print(f"Symbol: {product['Symbol']} - Nazwa: {product['Nazwa']}")
+    print('')
+    print('*Manually update the stocks in WOO to level stocks')
+else:
+    print('No products to update in SUB')
+
+print("")
+print('Proceed with Report: Stock Comparison Summary?')
+user_decision = input('Proceed? Y/N: ').strip().lower()
+if user_decision != 'y':
+    print('To view remaining reports reload script')
+    quit()
+
+print("")
+print('Report: Stock Comparison Summary')
+print("")

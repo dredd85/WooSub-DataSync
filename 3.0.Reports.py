@@ -110,7 +110,7 @@ count_out_of_stock_woo_not_in_local = len(out_of_stock_woo_not_in_local)
 
 # Print out-of-stock differences
 if count_out_of_stock_local_not_in_woo > 0:
-    print(f"Out of stock in SUB but in stock in WOO: {count_out_of_stock_local_not_in_woo}")
+    print(f"Out of stock in SUB & In Stock in WOO: {count_out_of_stock_local_not_in_woo}")
     for product in out_of_stock_local_not_in_woo:
         print(f"Symbol: {product['Symbol']} - Nazwa: {product['Nazwa']}")
     print('')
@@ -121,7 +121,7 @@ else:
 print("")
 
 if count_out_of_stock_woo_not_in_local > 0:
-    print(f"Out of stock in WOO but not in SUB: {count_out_of_stock_woo_not_in_local}")
+    print(f"Out of stock in WOO & In Stock in SUB: {count_out_of_stock_woo_not_in_local}")
     for product in out_of_stock_woo_not_in_local:
         print(f"Symbol: {product['Symbol']} - Nazwa: {product['Nazwa']}")
     print('')
@@ -139,3 +139,24 @@ if user_decision != 'y':
 print("")
 print('Report: Stock Comparison Summary')
 print("")
+
+# products with low stock locally -> should be out of stock online
+sub_low_stock = panda_query("""
+SELECT prod_woo.Nazwa, prod_woo.Symbol, prod_woo.Stan as Stan_Woo, prod_subiekt.Stan as Stan_Sub 
+FROM prod_woo join prod_subiekt ON prod_woo.Symbol = prod_subiekt.Symbol
+WHERE prod_subiekt.Stan < prod_woo.Stan
+AND prod_woo.Status != 'outofstock';
+""")
+# products with high stock locally -> should be in stock online
+woo_low_stock = panda_query("""
+SELECT prod_woo.Nazwa, prod_woo.Symbol, prod_woo.Stan as Stan_Woo, prod_subiekt.Stan as Stan_Sub 
+FROM prod_woo join prod_subiekt ON prod_woo.Symbol = prod_subiekt.Symbol
+WHERE prod_subiekt.Stan > prod_woo.Stan
+AND prod_woo.Status = 'outofstock';
+""")
+
+print('Products with Low Local Stock in Sub:')
+print(sub_low_stock)
+print('')
+print('Products with Higher Stock Locally:')
+print(woo_low_stock)

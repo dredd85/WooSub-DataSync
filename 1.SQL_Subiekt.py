@@ -1,4 +1,4 @@
-import pyodbc
+import sqlalchemy as sa
 import sqlite3
 import pandas as pd
 import os
@@ -33,14 +33,28 @@ else:
     username = input("Insert login: ")
     password = input("Insert password: ")
 
-# Connect to SQL Server database and execute a query
+# Build SQLAlchemy connection string for SQL Server
+cnxn_str = f"mssql+pyodbc://{username}:{password}@{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
 
-query = "SELECT dbo.tw__Towar.tw_Nazwa as Nazwa, dbo.tw__Towar.tw_DostSymbol as Symbol, dbo.tw__Towar.tw_StanMin as Stan_Minimalny, dbo.tw_Stan.st_Stan as Stan FROM dbo.tw__Towar JOIN dbo.tw_Stan on dbo.tw_Stan.st_Towid = dbo.tw__Towar.tw_id JOIN dbo.tw_CechaTw on dbo.tw__Towar.tw_id = dbo.tw_CechaTw.cht_IdTowar WHERE tw_StanMin != 0 and cht_IdCecha = 8 and st_MagId = 4;"
-cnxn_str = f"DRIVER=SQL Server Native Client 11.0;SERVER={server};DATABASE={database};UID={username};PWD={password}"
+# Query to be executed
+query = """
+    SELECT 
+        dbo.tw__Towar.tw_Nazwa as Nazwa,
+        dbo.tw__Towar.tw_DostSymbol as Symbol,
+        dbo.tw__Towar.tw_StanMin as Stan_Minimalny,
+        dbo.tw_Stan.st_Stan as Stan 
+    FROM dbo.tw__Towar 
+    JOIN dbo.tw_Stan on dbo.tw_Stan.st_Towid = dbo.tw__Towar.tw_id 
+    JOIN dbo.tw_CechaTw on dbo.tw__Towar.tw_id = dbo.tw_CechaTw.cht_IdTowar 
+    WHERE tw_StanMin != 0 and cht_IdCecha = 8 and st_MagId = 4;
+"""
 
 try:
-    cnxn = pyodbc.connect(cnxn_str)
-    df_sqlserver = pd.read_sql(query, cnxn)
+    # Connect to SQL Server using SQLAlchemy
+    engine = sa.create_engine(cnxn_str)
+    with engine.connect() as cnxn:
+        # Execute query and fetch data into a DataFrame
+        df_sqlserver = pd.read_sql(query, cnxn)
 
     # Save the data to a SQLite database
     conn = sqlite3.connect("DB_compare.db")
@@ -52,12 +66,9 @@ try:
     # Print the retrieved data
     print(df_sqlite)
 
-# Close the connections
-    cnxn.close()
+    # Close the connections
     conn.close()
 
-except:
+except Exception as e:
     print('Connection failed, please check server authentication and try again')
-
-
-
+    print(e)

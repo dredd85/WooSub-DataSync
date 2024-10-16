@@ -21,9 +21,10 @@ if answer == possible_answers[0]:
         consumer_key = var_unpacked[1]
         consumer_secret = var_unpacked[2]
         print('File load success')  
-    except FileNotFoundError as E:
+    except AttributeError as E:
         print('***Auth failed*** Error')
         print(E)
+        print('Check if variables exist')
         quit()
 else:
     url = input('Insert Woocommerce site: ')

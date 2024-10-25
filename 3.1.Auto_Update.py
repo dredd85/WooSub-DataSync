@@ -112,7 +112,7 @@ if user_decision != 'y':
 # Fetch products from local and online databases
 instock_local = panda_query("""
     SELECT Symbol, Stan FROM prod_subiekt
-    WHERE Stan_Minimalny < Stan
+    WHERE Stan_Minimalny <= Stan
 """)
 
 out_of_stock_woo = panda_query("""

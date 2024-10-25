@@ -127,7 +127,7 @@ for index, product in instock_local.iterrows():
     sku = product['Symbol']
     stock_level = product['Stan']  # Extract the stock level from instock_local
     # new stock level
-    new_stock_level = round(stock_level / 2)
+    new_stock_level = round(stock_level / 2) + 1
 
     # Check if SKU exists in the out_of_stock_woo DataFrame
     match = out_of_stock_woo[out_of_stock_woo['Symbol'] == sku]

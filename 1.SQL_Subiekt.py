@@ -2,41 +2,52 @@ import sqlalchemy as sa
 import sqlite3
 import pandas as pd
 import os
+import logging
+from datetime import datetime
 
-print('Auth from env (E) or input (I)?')
-print('For env (E) auth ensure correct variable name')
-answer = input('Type E or I: ')
-answer = answer.upper()
-possible_answers = ['E', 'I']
+# Ensure logs folder exists
+log_folder = "logs"
+os.makedirs(log_folder, exist_ok=True)
 
-if answer not in possible_answers:
-    print('Wrong input, try again')
+# Full log path
+log_filename = os.path.join(log_folder, f"log_{datetime.now().strftime('%Y-%m-%d')}.log")
+
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(log_filename, encoding='utf-8'),
+        logging.StreamHandler()  # Prints to console
+    ]
+)
+
+logging.info("Script Starts")
+
+# Get credentials
+var = 'sql_key'
+try:
+    logging.info("Fetching credentials")
+    cred = os.getenv(var)
+    if not cred:
+        raise ValueError(f"No credentials found in environment variable: {var}")
+    var_unpacked = cred.split(';')
+    server = var_unpacked[0]
+    database = var_unpacked[1]
+    username = var_unpacked[2]
+    password = var_unpacked[3]
+    logging.info("Database credentials loaded successfully.")
+except Exception as e:
+    logging.error("***Auth failed***", exc_info=True)
     quit()
-
-if answer == possible_answers[0]:
-    var = input('Type variable name: ')
-    try:
-        cred = os.getenv(var)
-        var_unpacked = cred.split(';')
-        server = var_unpacked[0]
-        database = var_unpacked[1]
-        username = var_unpacked[2]
-        password = var_unpacked[3]
-        print('Database connection: Success')   
-    except FileNotFoundError as E:
-        print('***Auth failed*** Error')
-        print(E)
-        quit()
-else:
-    server = input("Insert server name: ")
-    database = input("Insert database name: ")
-    username = input("Insert login: ")
-    password = input("Insert password: ")
+    logging.info("Script failed due to error")
+logging.info("Credentials Fetched")
 
 # Build SQLAlchemy connection string for SQL Server
 cnxn_str = f"mssql+pyodbc://{username}:{password}@{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
 
-# Query to be executed
+# SQL Query
 query = """
     SELECT 
         dbo.tw__Towar.tw_Nazwa as Nazwa,
@@ -50,25 +61,25 @@ query = """
 """
 
 try:
-    # Connect to SQL Server using SQLAlchemy
+    logging.info("Connecting to SQL Server...")
     engine = sa.create_engine(cnxn_str)
     with engine.connect() as cnxn:
-        # Execute query and fetch data into a DataFrame
         df_sqlserver = pd.read_sql(query, cnxn)
+    logging.info("Data fetched successfully from SQL Server.")
 
-    # Save the data to a SQLite database
     conn = sqlite3.connect("DB_compare.db")
     df_sqlserver.to_sql("prod_subiekt", conn, if_exists="replace", index=False)
+    logging.info("Data saved to SQLite database.")
 
-    # Retrieve the data from the SQLite database
     df_sqlite = pd.read_sql("SELECT * FROM prod_subiekt", conn)
+    logging.info("Data retrieved from SQLite:")
+    logging.info(f"\n{df_sqlite}")
 
-    # Print the retrieved data
-    print(df_sqlite)
-
-    # Close the connections
     conn.close()
+    logging.info("Connections closed. Script completed successfully.")
 
 except Exception as e:
-    print('Connection failed, please check server authentication and try again')
-    print(e)
+    logging.error("Connection or execution failed.", exc_info=True)
+
+
+logging.info("Script succesful")

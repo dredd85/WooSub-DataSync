@@ -119,5 +119,5 @@ try:
 
 except Exception:
     logging.exception("Critical failure during API sync or database operation")
-    
+    quit()
 logging.info("Script completed.")

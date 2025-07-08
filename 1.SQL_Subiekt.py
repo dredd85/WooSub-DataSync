@@ -48,7 +48,7 @@ try:
     logging.info("Database credentials loaded successfully.")
 
 except Exception as e:
-    logging.error("Authentication failed.", exc_info=True)
+    logging.exception("Authentication failed.")
     logging.info("Script terminated due to credential error.")
     quit()
 
@@ -97,7 +97,7 @@ try:
     conn.close()
     logging.info("Database connections closed. Data sync completed.")
 
-except Exception as e:
-    logging.error("Database connection or data processing failed.", exc_info=True)
-
+except Exception:
+    logging.exception("Database connection or data processing failed.")
+    quit()
 logging.info("Script completed.")

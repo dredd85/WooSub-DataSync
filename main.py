@@ -19,23 +19,32 @@ def run_script(script):
 
 # Function to run scripts sequentially based on user's choice
 def run_scripts_based_on_choice():
-    print("Which scripts would you like to run?")
-    print("1 SQL_Subiekt.py")
-    print("2 Api_Woo.py")
-    print("3 Reports.py")
-    print("4 Auto_Update.pyy")
-    print("5 Run all scripts")
+    while True:
+        print("What would you like to proceed first?")
+        print("(1)Extract Subiekt")
+        print("(2)Fetch WooCommerce")
+        print("(3)Show Reports")
+        print("(4)Update Inventory")
+        print("(5)Run all scripts")
+        print("(q)Quit")
 
-    choice = input("Enter the number (or 5 for all): ").strip()
+        choice = input("Enter the number (or 5 for all, q to quit): ").strip().lower()
 
-    if choice == '5':  # Run all scripts
-        for script in scripts:
-            run_script(script)
-    elif choice in ['1', '2', '3', '4']:  # Run specific script
-        script_index = int(choice) - 1  # Adjust for 0-based index
-        run_script(scripts[script_index])
-    else:
-        print("Invalid choice. Please try again.")
+        if choice == '5':  # Run all scripts
+            for script in scripts:
+                run_script(script)
+            break
+        elif choice in ['1', '2', '3', '4']:  # Run specific script
+            script_index = int(choice) - 1  # Adjust for 0-based index
+            run_script(scripts[script_index])
+            break
+        elif choice == 'q':
+            print("Exiting.")
+            break
+        else:
+            print(f"Invalid choice '{choice}'. Please try again.\n")
+            import time
+            time.sleep(2)
 
 # Run the function to ask the user and run the scripts
 run_scripts_based_on_choice()

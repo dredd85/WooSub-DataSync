@@ -2,10 +2,10 @@ import subprocess
 
 # List of scripts to run
 scripts = [
-    "1.SQL_Subiekt.py",  # Replace with your actual script names
-    "2.Api_Woo.py",
-    "3.0.Reports.py",
-    "3.1.Auto_Update.py"
+    "extract_subiekt.py",
+    "fetch_woocommerce.py",
+    "report_differences.py",
+    "auto_update_inventory.py"
 ]
 
 # Function to run a specific script

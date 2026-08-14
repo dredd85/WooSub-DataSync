@@ -1,53 +1,127 @@
 
 # WooSub DataSync
 
-Early-stage project that involves analyzing a local database from Subiekt using T-SQL and comparing it to the database in Woocommerce, which uses MySQL. To gather the data, T-SQL will be directly extracted from the local database, while the data from Woocommerce will be obtained through its API.
+This project compares product data from a local Subiekt database with WooCommerce product data, then helps synchronize stock levels between them.
 
-The primary objective of this project is to identify any discrepancies between the two databases and develop solutions to streamline data management processes. As the project progresses, I'll update this README file to provide more details on the approach taken and the outcomes achieved. Stay tuned for further updates!
+The workflow is organized as small standalone scripts, with a main entrypoint that lets you choose which step to run.
 
-This project consists of multiple scripts that compare data between different databases. The scripts utilize various libraries and APIs to perform the necessary operations.
+## Project structure
 
-## Installation
+- main.py - menu-based runner for the project
+- extract_subiekt.py - loads data from SQL Server/Subiekt into SQLite
+- fetch_woocommerce.py - fetches product data from WooCommerce and stores it in SQLite
+- report_differences.py - compares WooCommerce and Subiekt data and prints summaries
+- auto_update_inventory.py - updates WooCommerce stock based on the local Subiekt stock status
+- DB_compare.db - SQLite database used by the comparison flow
+- Old_versions/ - previous script versions kept for reference
 
-To run these scripts, make sure you have the following dependencies installed:
+## Database model
 
-- pyodbc
-- sqlite3
-- pandas
-- woocommerce
-- json
+The project uses one SQLite database: DB_compare.db
 
-You can install these dependencies using pip:
+Main tables:
 
+- prod_subiekt
+  - sku
+  - name
+  - stock_quantity
+  - min_stock
+- prod_woo
+  - id
+  - sku
+  - name
+  - stock_quantity
+  - stock_status
+
+The comparison logic matches products by SKU.
+
+## Dependencies
+
+Install the required Python packages:
+
+```bash
+pip install pyodbc pandas sqlalchemy woocommerce
 ```
-pip install pyodbc sqlite3 pandas woocommerce
+
+Optional packages may be needed depending on your environment, especially for SQL Server ODBC access.
+
+## Typical workflow
+
+Run the project from the project folder:
+
+```bash
+python main.py
 ```
 
-## Usage
+From the menu you can choose:
 
-1. **Script 1: SQL Server to SQLite Database**
+1. Extract Subiekt
+2. Fetch WooCommerce
+3. Show Reports
+4. Update Inventory
+5. Run all scripts
 
-   - Run the script and provide the required information when prompted:
-     - SQL Server details (server name, database name, login, and password)
-   - The script will connect to the SQL Server database, execute a query to retrieve data, and save the data to a SQLite database named "DB_compare.db."
-   - The retrieved data can be accessed and printed from the SQLite database.
+## Script responsibilities
 
-2. **Script 2: Woocommerce API Data Fetch**
+### 1. extract_subiekt.py
 
-   - Run the script and provide the required information when prompted:
-     - Woocommerce site URL, consumer key, and secret key
-   - The script will connect to the Woocommerce site using the provided API credentials.
-   - It will fetch both in-stock and out-of-stock products from the Woocommerce site using the Woocommerce API.
-   - The retrieved data will be stored in the "prod_woo" table of the SQLite database "DB_compare.db."
+- prompts for SQL Server credentials or reads them from an environment variable
+- connects to the SQL Server database
+- runs the Subiekt query
+- saves the result into prod_subiekt inside DB_compare.db
+- prints a preview of the first rows
 
-3. **Script 3: Reports**
+### 2. fetch_woocommerce.py
 
-   - Run the script to compare the data in SQLITE database between the Woocommerce table ("prod_woo") and the local Subiekt("prod_subiekt").
-   - The script will execute SQL queries to identify differences in stock levels, out-of-stock products, and overall product count.
-   - Any differences found will be reported, including products with low stock levels, out-of-stock products, and discrepancies in overall product count.
-  
-4. **Script 3.1: Auto Update**
+- prompts for WooCommerce credentials or reads them from an environment variable
+- connects to the WooCommerce REST API
+- downloads product data
+- stores it in prod_woo inside DB_compare.db
+- prints a small sample of fetched products for validation
 
-   - This script checks and compares the products with an "out of stock" status between WooCommerce and the local Subiekt database.
-   - After the initial check, the script displays which products should be updated online.   
-   - The script then prompts the user for confirmation before proceeding with the update.
+### 3. report_differences.py
+
+- reads both SQLite tables
+- compares product coverage, stock levels, and out-of-stock conditions
+- prints human-readable summaries
+- asks before moving to the next report section
+
+### 4. auto_update_inventory.py
+
+- compares local Subiekt stock versus WooCommerce stock
+- identifies products that should be marked out of stock or restored to stock
+- shows the products that will be updated
+- asks for confirmation before applying changes
+- sends updates to WooCommerce via the API
+
+## Credential handling
+
+The scripts support two modes:
+
+- environment variables
+- interactive input
+
+When credentials are supplied through environment variables, the scripts expect a semicolon-separated format depending on the script.
+
+## Notes
+
+- This project is intentionally built as procedural scripts, not as a package.
+- The database is local and intended for comparison and inventory sync work.
+- The project keeps historical and older script versions in Old_versions/ for reference.
+
+## Example usage
+
+```bash
+python main.py
+```
+
+Then select the action you want to perform from the menu.
+
+## Future improvements
+
+Possible next improvements include:
+
+- better validation of database schema before updates
+- more detailed logging for failed product updates
+- export of comparison reports to CSV or TXT
+- optional dry-run mode for inventory synchronization

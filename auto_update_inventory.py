@@ -1,165 +1,230 @@
+import logging
+import os
 import sqlite3
+from typing import Dict, List, Tuple
+
 import pandas as pd
 from woocommerce import API
-import os
 
-print('This script is built for auto update stocks in WooCommerce')
-print('*******')
-print('Part I: Updates products that should be in out_of_stock status in Woo')
-print('Part II: Updates prododucts that should be instock in Woo')
-print('*******')
-print('Before both user decision and credentials are needed')
-print('')
-print('Proceed with Part I?')
-user_decision = input('Proceed? Y/N: ').strip().lower()
-if user_decision != 'y':
-    print('To try again reload the script')
-    quit()
-# Connect to SQLite database
-conn = sqlite3.connect("DB_compare.db")
-cursor = conn.cursor()
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-# Define simple queries
-def panda_query(query):
+DEFAULT_DB = "DB_compare.db"
+DEFAULT_TABLE = "prod_woo"
+
+
+def parse_env_credentials(var_name: str) -> Dict[str, str]:
+    cred = os.getenv(var_name)
+    if not cred:
+        raise ValueError(f"Environment variable '{var_name}' is not set")
+
+    parts = [part.strip() for part in cred.split(";")]
+    if len(parts) < 3:
+        raise ValueError(f"Environment variable '{var_name}' is malformed")
+
+    return {
+        "url": parts[0],
+        "consumer_key": parts[1],
+        "consumer_secret": parts[2],
+    }
+
+
+def prompt_credentials() -> Dict[str, str]:
+    return {
+        "url": input("Insert WooCommerce site URL: ").strip(),
+        "consumer_key": input("Insert consumer key: ").strip(),
+        "consumer_secret": input("Insert consumer secret: ").strip(),
+    }
+
+
+def get_credentials_interactive() -> Dict[str, str]:
+    while True:
+        choice = input("Auth from env (E) or input (I)? (E/I): ").strip().upper()
+        if choice == "E":
+            var = input("Type variable name: ").strip()
+            try:
+                creds = parse_env_credentials(var)
+                logging.info("Loaded WooCommerce credentials from '%s'", var)
+                return creds
+            except Exception as e:
+                logging.error("%s", e)
+                if input("Try again? (y/N): ").strip().lower() != "y":
+                    raise
+        elif choice == "I":
+            return prompt_credentials()
+        else:
+            print("Please type 'E' or 'I'.")
+
+
+def build_api_client(creds: Dict[str, str]) -> API:
+    return API(
+        creds["url"],
+        creds["consumer_key"],
+        creds["consumer_secret"],
+        version="wc/v3",
+        timeout=15,
+    )
+
+
+def connect_db(db_path: str = DEFAULT_DB) -> sqlite3.Connection:
+    return sqlite3.connect(db_path)
+
+
+def query_df(conn: sqlite3.Connection, query: str) -> pd.DataFrame:
     return pd.read_sql(query, conn)
 
-# Fetch products from local and online databases
-out_of_stock_local = panda_query("""
-    SELECT Symbol FROM prod_subiekt
-    WHERE Stan_Minimalny > Stan
-""")
 
-woo_products = panda_query("""
-    SELECT ID, Symbol FROM prod_woo
-    WHERE Stan > 0 OR Status = 'instock'
-""")
+def load_products_to_mark_out_of_stock(conn: sqlite3.Connection) -> List[Tuple[int, str]]:
+    local_df = query_df(
+        conn,
+        """
+        SELECT sku, stock_quantity, min_stock
+        FROM prod_subiekt
+        WHERE min_stock > stock_quantity
+        """,
+    )
 
-# Convert 'Symbol' columns to string type in both DataFrames
-out_of_stock_local['Symbol'] = out_of_stock_local['Symbol'].astype(str)
-woo_products['Symbol'] = woo_products['Symbol'].astype(str)
+    woo_df = query_df(
+        conn,
+        """
+        SELECT id, sku, stock_quantity, stock_status
+        FROM prod_woo
+        WHERE stock_quantity > 0 OR stock_status = 'instock'
+        """,
+    )
 
-products_to_update = []
+    local_skus = local_df["sku"].astype(str)
+    woo_df["sku"] = woo_df["sku"].astype(str)
 
-# Iterate through products from the website
-for index, product in woo_products.iterrows():
-    sku = product['Symbol']
-    # Check if SKU exists in the products with local stock lower than minimal
-    if sku in out_of_stock_local['Symbol'].values:
-        products_to_update.append((product['ID'], sku))
+    products_to_update = []
+    for _, product in woo_df.iterrows():
+        if str(product["sku"]) in local_skus.values:
+            products_to_update.append((int(product["id"]), str(product["sku"])))
 
-print('Auth from env (E) or input (I)?')
-print('For env (E) auth ensure correct variable name')
-answer = input('Type E or I: ')
-answer = answer.upper()
-possible_answers = ['E', 'I']
+    return products_to_update
 
-if answer not in possible_answers:
-    print('Wrong input, try again')
-    quit()
 
-if answer == possible_answers[0]:
-    var = input('Type variable name: ')
+def load_products_to_mark_in_stock(conn: sqlite3.Connection) -> List[Tuple[int, str, int]]:
+    local_df = query_df(
+        conn,
+        """
+        SELECT sku, stock_quantity, min_stock
+        FROM prod_subiekt
+        WHERE stock_quantity >= min_stock
+        """,
+    )
+
+    woo_df = query_df(
+        conn,
+        """
+        SELECT id, sku, stock_quantity, stock_status
+        FROM prod_woo
+        WHERE stock_quantity = 0 OR stock_status = 'outofstock'
+        """,
+    )
+
+    local_df["sku"] = local_df["sku"].astype(str)
+    woo_df["sku"] = woo_df["sku"].astype(str)
+
+    products_to_update = []
+    for _, item in local_df.iterrows():
+        sku = str(item["sku"])
+        stock_level = int(item["stock_quantity"])
+        match = woo_df[woo_df["sku"] == sku]
+        if not match.empty:
+            product_id = int(match.iloc[0]["id"])
+            new_stock_level = max(1, round(stock_level / 2) + 1)
+            products_to_update.append((product_id, sku, new_stock_level))
+
+    return products_to_update
+
+
+def update_product_stock(api: API, product_id: int, sku: str, new_stock: int) -> bool:
     try:
-        cred = os.getenv(var)
-        var_unpacked = cred.split(';')
-        url = var_unpacked[0]
-        consumer_key = var_unpacked[1]
-        consumer_secret = var_unpacked[2]
-        print('File load success')  
-    except FileNotFoundError as E:
-        print('***Auth failed*** Error')
-        print(E)
-        quit()
-else:
-    url = input('Insert Woocommerce site: ')
-    consumer_key = input('Insert consumer key: ')
-    consumer_secret = input('Insert secret key: ')
+        response = api.put(f"products/{product_id}", data={"stock_quantity": new_stock}).json()
+        if "message" in response:
+            logging.error("Failed to update SKU %s: %s", sku, response["message"])
+            return False
+        logging.info("Updated SKU %s to stock=%s", sku, new_stock)
+        return True
+    except Exception as e:
+        logging.error("Error updating SKU %s: %s", sku, e)
+        return False
 
-# Initialize WooCommerce API
-wcapi = API(url, consumer_key, consumer_secret, version="wc/v3", timeout=10)
 
-if not products_to_update:
-    print('No products to update')
-else:
-    print(f'Products to update: {products_to_update}')
-    user_decision = input('Proceed? Y/N: ').strip().lower()
-    if user_decision == "y":
-        print('Update in progress...')
-        # Check products in WooCommerce store
-        for product_id, sku in products_to_update:
-            print(f"Product to update: ID={product_id}, SKU={sku}")
-            # Uncomment the following block to enable updating
-            try:
-                product_data = {'stock_quantity': 0}  # Set the new stock level to 0
-                response = wcapi.put(f"products/{product_id}", data=product_data).json()
-                if 'message' in response:
-                    print(f"Error updating stock level for product with SKU {sku}: {response['message']}")
-                else:
-                    print(f"Stock level updated successfully for product with SKU {sku}")
-            except Exception as e:
-                print(f"Error updating stock level for product with SKU {sku}: {e}")
-    else:
-        print('Update cancelled.')
+def prompt_continue(message: str) -> bool:
+    response = input(f"{message} (Y/n): ").strip().lower()
+    return response != "n"
 
-# Second update section for product that should be instock in Woo
 
-print('Proceed with Part II?')
-user_decision = input('Proceed? Y/N: ').strip().lower()
-if user_decision != 'y':
-    print('To try again reload the script')
-    quit()
+def preview_products(products: List[Tuple], title: str) -> None:
+    print(f"\n{title}:")
+    if not products:
+        print("  (none)")
+        return
 
-# Fetch products from local and online databases
-instock_local = panda_query("""
-    SELECT Symbol, Stan FROM prod_subiekt
-    WHERE Stan_Minimalny <= Stan
-""")
+    for item in products:
+        if len(item) == 2:
+            product_id, sku = item
+            print(f"  Product ID={product_id} | SKU={sku} | New stock=0")
+        else:
+            product_id, sku, new_stock = item
+            print(f"  Product ID={product_id} | SKU={sku} | New stock={new_stock}")
 
-out_of_stock_woo = panda_query("""
-    SELECT ID, Symbol FROM prod_woo
-    WHERE Stan = 0 OR Status = 'outofstock'
-""")
 
-products_to_update = []
+def run_update_batch(api: API, products: List[Tuple], target_stock: int, label: str) -> int:
+    if not products:
+        print(f"No products require {label}.")
+        return 0
 
-# Iterate through products from the website
-for index, product in instock_local.iterrows():
-    sku = product['Symbol']
-    stock_level = product['Stan']  # Extract the stock level from instock_local
-    # new stock level
-    new_stock_level = round(stock_level / 2) + 1
+    preview_products(products, f"Products to update for {label}")
+    if not prompt_continue(f"Proceed with {label} update?"):
+        print(f"{label.title()} update cancelled.")
+        return 0
 
-    # Check if SKU exists in the out_of_stock_woo DataFrame
-    match = out_of_stock_woo[out_of_stock_woo['Symbol'] == sku]
+    success_count = 0
+    for item in products:
+        if len(item) == 2:
+            product_id, sku = item
+            new_stock = target_stock
+            print(f"Updating SKU={sku} | Product ID={product_id} | New stock={new_stock}")
+            if update_product_stock(api, product_id, sku, new_stock):
+                success_count += 1
+        else:
+            product_id, sku, new_stock = item
+            print(f"Updating SKU={sku} | Product ID={product_id} | New stock={new_stock}")
+            if update_product_stock(api, product_id, sku, new_stock):
+                success_count += 1
 
-    if not match.empty:
-        product_id = match.iloc[0]['ID']  # Get the corresponding ID from out_of_stock_woo
-        
-        # Append product_id, sku, and new_stock_level to products_to_update list
-        products_to_update.append((product_id, sku, new_stock_level))
+    print(f"{label.title()} update complete. Updated successfully: {success_count}/{len(products)}")
+    return success_count
 
-# Updating Part II
 
-if not products_to_update:
-    print('No products to update')
-    exit()
-else:
-    print(f'Products to update: {products_to_update}')
-    user_decision = input('Proceed? Y/N: ').strip().lower()
-    if user_decision == "y":
-        print('Update in progress...')
-        # Check products in WooCommerce store
-        for product_id, sku, new_stock_level in products_to_update:
-            print(f"Product to update: ID={product_id}, SKU={sku}")
-            # Uncomment the following block to enable updating
-            try:
-                product_data = {'stock_quantity': new_stock_level}  # Set the new stock level to 0
-                response = wcapi.put(f"products/{product_id}", data=product_data).json()
-                if 'message' in response:
-                    print(f"Error updating stock level for product with SKU {sku}: {response['message']}")
-                else:
-                    print(f"Stock level updated successfully for product with SKU {sku}")
-            except Exception as e:
-                print(f"Error updating stock level for product with SKU {sku}: {e}")
-    else:
-        print('Update cancelled.')
+def main() -> None:
+    try:
+        print("\n" + "=" * 70)
+        print("WooCommerce stock sync")
+        print("=" * 70)
+
+        conn = connect_db()
+        creds = get_credentials_interactive()
+        api = build_api_client(creds)
+
+        print("\nChecking products that should be marked out of stock...")
+        products_to_set_out_of_stock = load_products_to_mark_out_of_stock(conn)
+        run_update_batch(api, products_to_set_out_of_stock, 0, "out-of-stock")
+
+        print("\nChecking products that should be marked in stock...")
+        products_to_set_in_stock = load_products_to_mark_in_stock(conn)
+        run_update_batch(api, products_to_set_in_stock, 0, "in-stock")
+
+        conn.close()
+        print("\n" + "=" * 70)
+        print("Finished WooCommerce stock sync.")
+        print("=" * 70)
+
+    except Exception as e:
+        logging.error("Operation failed: %s", e)
+
+
+if __name__ == "__main__":
+    main()
